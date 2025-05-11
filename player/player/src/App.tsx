@@ -27,6 +27,10 @@ import { YourMix1 } from './pages/YourMix1';
 import { HindiAlbums } from './pages/HindiAlbums';
 import { HindiCollection } from './pages/HindiCollection';
 import { AlbumCategories } from './pages/AlbumCategories';
+import { AdminDashboard } from './pages/admin/Dashboard';
+import { AdminUsers } from './pages/admin/Users';
+import { AdminSongs } from './pages/admin/Songs';
+import { AdminRoute } from './components/admin/AdminRoute';
 
 function App() {
   return (
@@ -44,6 +48,34 @@ function App() {
               <Route 
                 path="/register" 
                 element={<Register />} 
+              />
+              
+              {/* Admin routes */}
+              <Route 
+                path="/admin" 
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              
+              <Route 
+                path="/admin/users" 
+                element={
+                  <AdminRoute>
+                    <AdminUsers />
+                  </AdminRoute>
+                }
+              />
+              
+              <Route 
+                path="/admin/songs" 
+                element={
+                  <AdminRoute>
+                    <AdminSongs />
+                  </AdminRoute>
+                }
               />
               
               {/* Protected routes with Layout */}

@@ -1,7 +1,7 @@
 import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Create axios instance with default config
-const api = axios.create({
+export const api = axios.create({
   baseURL: 'http://localhost:8080/api', // Backend runs on port 8080
   headers: {
     'Content-Type': 'application/json',
@@ -22,53 +22,50 @@ api.interceptors.request.use(
   }
 );
 
-// Add interceptor to refresh token if expired
+// Add response interceptor to handle token refresh or logout
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     return response;
   },
   async (error: AxiosError) => {
-    if (!error.config) {
-      return Promise.reject(error);
-    }
-    
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     
-    // If error is 401 and not already retrying
+    // Handle 401 Unauthorized - token expired
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
-        // Get refresh token from storage
+        // Get refresh token
         const refreshToken = localStorage.getItem('refreshToken');
         
         if (!refreshToken) {
-          // No refresh token, logout user
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
+          // No refresh token, redirect to login
           window.location.href = '/login';
           return Promise.reject(error);
         }
         
-        // Try to get new tokens using refresh token
-        const response = await axios.post('http://localhost:8080/api/auth/refreshtoken', {
-          refreshToken,
-        });
+        // Try to refresh the token
+        const response = await axios.post(
+          'http://localhost:8080/api/auth/refreshtoken',
+          { refreshToken },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
         
-        const { token } = response.data;
+        // Store the new token
+        const { token: newToken, refreshToken: newRefreshToken } = response.data;
+        localStorage.setItem('accessToken', newToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
         
-        // Save new tokens
-        localStorage.setItem('accessToken', token);
+        // Update authorization header
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-        return axios(originalRequest);
+        // Retry the original request
+        return api(originalRequest);
       } catch (refreshError) {
-        // Refresh token is invalid, logout user
+        // Refresh token failed, redirect to login
+        localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
@@ -77,6 +74,17 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// API interfaces
+export interface SongResponse {
+  id: number;
+  title: string;
+  artist: string;
+  album: string;
+  duration: number;
+  url: string;
+  coverArt: string;
+}
 
 // Auth API
 export const authAPI = {
@@ -96,4 +104,40 @@ export const authAPI = {
   },
 };
 
-export default api; 
+// Admin API
+export const adminAPI = {
+  getDashboardStats: async () => {
+    const response = await api.get('/admin/dashboard');
+    return response.data;
+  },
+  
+  getUsers: async (page = 0, size = 10, sort = 'id,asc') => {
+    const response = await api.get(`/admin/users?page=${page}&size=${size}&sort=${sort}`);
+    return response.data;
+  },
+  
+  getUserById: async (id: number) => {
+    const response = await api.get(`/admin/users/${id}`);
+    return response.data;
+  },
+  
+  toggleUserStatus: async (id: number) => {
+    const response = await api.put(`/admin/users/${id}/toggle-status`);
+    return response.data;
+  },
+  
+  getSongs: async (page = 0, size = 10, sort = 'id,asc') => {
+    const response = await api.get(`/admin/songs?page=${page}&size=${size}&sort=${sort}`);
+    return response.data;
+  },
+  
+  getSongById: async (id: number) => {
+    const response = await api.get(`/admin/songs/${id}`);
+    return response.data;
+  },
+  
+  deleteSong: async (id: number) => {
+    const response = await api.delete(`/admin/songs/${id}`);
+    return response.data;
+  },
+}; 

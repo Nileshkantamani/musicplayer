@@ -16,7 +16,8 @@ import {
   UserCircleIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  ArrowLeftOnRectangleIcon
+  ArrowLeftOnRectangleIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { 
   HomeIcon as HomeIconSolid, 
@@ -25,7 +26,8 @@ import {
   HeartIcon as HeartIconSolid,
   ClockIcon as ClockIconSolid,
   SunIcon as SunIconSolid,
-  MoonIcon as MoonIconSolid
+  MoonIcon as MoonIconSolid,
+  ShieldCheckIcon as ShieldCheckIconSolid
 } from '@heroicons/react/24/solid';
 import { usePlaylists } from '../../hooks/usePlaylists';
 import { useAuth } from '../../context/AuthContext';
@@ -47,6 +49,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
     return location.pathname === path;
   };
   
+  // Check if user has admin role
+  const isAdmin = user?.roles?.some(role => role === 'ROLE_ADMIN') || false;
+  
   const navItems = [
     { 
       name: 'Home', 
@@ -63,6 +68,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
       path: '/library', 
       icon: isActive('/library') ? <BookOpenIconSolid className="w-5 h-5" /> : <BookOpenIcon className="w-5 h-5" /> 
     },
+    // Show Admin Dashboard link only for users with admin role
+    ...(isAdmin ? [{ 
+      name: 'Admin', 
+      path: '/admin', 
+      icon: isActive('/admin') || location.pathname.startsWith('/admin/') 
+        ? <ShieldCheckIconSolid className="w-5 h-5 text-purple-500" /> 
+        : <ShieldCheckIcon className="w-5 h-5" /> 
+    }] : []),
   ];
   
   const libraryItems = [

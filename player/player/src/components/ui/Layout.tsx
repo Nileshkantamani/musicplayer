@@ -8,7 +8,8 @@ import {
   UserCircleIcon, 
   UserPlusIcon, 
   ArrowRightOnRectangleIcon,
-  ArrowLeftOnRectangleIcon
+  ArrowLeftOnRectangleIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
@@ -20,6 +21,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, requireAuth = false })
   const { isAuthenticated, isLoading, logout, user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  
+  // Check if user has admin role
+  const isAdmin = user?.roles?.some(role => role === 'ROLE_ADMIN') || false;
   
   // Handle authentication redirect
   if (requireAuth && !isLoading && !isAuthenticated) {
@@ -61,6 +65,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, requireAuth = false })
           </div>
         ) : (
           <div className="flex items-center">
+            {isAdmin && (
+              <Link 
+                to="/admin" 
+                className="p-2 mr-2 rounded-full bg-purple-500 text-white text-sm font-medium shadow-sm"
+                title="Admin Panel"
+              >
+                <ShieldCheckIcon className="w-5 h-5" />
+              </Link>
+            )}
             <button 
               onClick={handleLogout}
               className="p-2 rounded-full bg-red-500 text-white text-sm font-medium shadow-sm"
